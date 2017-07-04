@@ -1,1 +1,323 @@
-This is the main json template
+{
+  "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "VMsku": {
+      "type": "string",
+      "allowedValues": [
+        "Standard_DS1_v2",
+        "Standard_DS2_v2",
+        "Standard_DS3_v2",
+        "Standard_DS4_v2",
+        "Standard_DS5_v2",
+        "Standard_DS11_v2",
+        "Standard_DS12_v2",
+        "Standard_DS13_v2",
+        "Standard_DS14_v2",
+        "Standard_DS15_v2"
+      ],
+      "metadata": {
+        "description": "sku to use for the master VM"
+      }
+    },
+    "masterImage": {
+      "type": "string",
+      "defaultValue": "CentOS_7.3",
+      "allowedValues": [
+        "CentOS_6.7",
+        "CentOS_7.2",
+        "CentOS_7.3",
+        "RHEL_7.2",
+        "SLES12",
+        "W2012R2"
+      ],
+      "metadata": {
+        "description": "The VM image of the master nodes"
+      }
+    },
+    "sharedStorage": {
+      "type": "string",
+      "defaultValue": "none",
+      "allowedValues": [
+        "none",
+        "beegfs",
+        "nfsonmaster"
+      ],
+      "metadata": {
+        "description": "specify the shared storage to be used. beegfs=> beegfs cluster, nfsonmaster=> nfs share on the master"
+      }
+    },
+    "dataDiskSize": {
+      "type": "string",
+      "defaultValue": "none",
+      "allowedValues": [
+        "none",
+        "P10",
+        "P20",
+        "P30"
+      ],
+      "metadata": {
+        "description": "Premium storage disk size to attach"
+      }
+    },
+    "nbDataDisks": {
+      "type": "int",
+      "metadata": {
+        "description": "Number of data disks to attach to the master"
+      },
+      "defaultValue": 2,
+      "maxValue": 16
+    },
+    "monitoring": {
+      "type": "string",
+      "defaultValue": "ganglia",
+      "allowedValues": [
+        "none",
+        "ganglia"
+      ],
+      "metadata": {
+        "description": "specify the monitoring to use"
+      }
+    },
+    "scheduler": {
+      "type": "string",
+      "defaultValue": "none",
+      "allowedValues": [
+        "none",
+        "pbspro"
+      ],
+      "metadata": {
+        "description": "specify the job scheduler to be used"
+      }
+    },
+    "vmPrefix": {
+      "type": "string",
+      "metadata": {
+        "description": "Base string for naming resources (max length of 8)"
+      },
+      "maxLength": 8
+    },
+    "adminUserName": {
+      "type": "string",
+      "metadata": {
+        "description": "User name for the Virtual Machine."
+      }
+    },
+    "adminPassword": {
+      "type": "securestring",
+      "defaultValue": "",
+      "metadata": {
+        "description": "password for the Virtual Machine."
+      }
+    },
+    "sshKeyData": {
+      "type": "string",
+      "metadata": {
+        "description": "SSH rsa public key file as a string."
+      }
+    }
+  },
+  "variables": {
+    "location": "[resourceGroup().location]",
+    "namingInfix": "[toLower(substring(concat(parameters('vmPrefix'), uniqueString(resourceGroup().id)), 0, 9))]",
+    "longNamingInfix": "[toLower(parameters('vmPrefix'))]",
+    "newStorageAccountSuffix": "[concat(variables('longNamingInfix'), 'sa')]",
+    "virtualNetworkName": "grid-vnet",
+    "vnetID": "[resourceId('Microsoft.Network/virtualNetworks', variables('virtualNetworkName'))]",
+    "networkSettings": {
+      "virtualNetworkName": "[variables('virtualNetworkName')]",
+      "addressPrefix": "10.0.0.0/20",
+      "computeSubnetPrefix": "10.0.0.0/21",
+      "storageSubnetPrefix": "10.0.10.0/25",
+      "infraSubnetPrefix": "10.0.8.0/28",
+      "gatewaySubnetPrefix": "10.0.9.0/29",
+      "infraSubnetRef": "[concat(variables('vnetID'),'/subnets/infraSubnet/')]",
+      "nsgName": "nsg-master"
+    },
+    "masterBoxName": "[concat(variables('longNamingInfix'), 'master')]",
+    "masterSettings": {
+      "Name": "[variables('masterBoxName')]",
+      "DiagSAName": "[concat(uniqueString(concat(resourceGroup().id, variables('newStorageAccountSuffix'), 'masterboxsadiag')), 'diag')]",
+      "IPConfigName": "[concat(variables('masterBoxName'), 'ipconfig')]",
+      "NicName": "[concat(variables('masterBoxName'), 'nic')]",
+      "VMsku": "[parameters('VMsku')]",
+      "publicIPAddressName": "[concat(variables('masterBoxName'), 'pip')]",
+      "publicIPDomainName": "[variables('namingInfix')]",
+      "sharedStorage": "[parameters('sharedStorage')]",
+      "monitoring": "[parameters('monitoring')]",
+      "scheduler": "[parameters('scheduler')]",
+      "dataDiskSize": "[parameters('dataDiskSize')]",
+      "nbDataDisks": "[parameters('nbDataDisks')]"
+    },
+    "masterOSSettings": {
+      "osType": "[variables('osTypes')[parameters('masterImage')]]",
+      "adminUserName": "[parameters('adminUserName')]",
+      "sshKeyData": "[parameters('sshKeyData')]",
+      "imageReference": "[variables('computeImages')[parameters('masterImage')]]"
+    },
+
+    "osTypes": {
+      "CentOS_6.7": {
+        "os": "linux"
+      },
+      "CentOS_7.2": {
+        "os": "linux"
+      },
+      "CentOS_7.3": {
+        "os": "linux"
+      },
+      "RHEL_7.2": {
+        "os": "linux"
+      },
+      "SLES12": {
+        "os": "linux"
+      },
+      "W2012R2": {
+        "os": "windows"
+      }
+    },
+    "computeImages": {
+      "CentOS_6.7": {
+        "publisher": "OpenLogic",
+        "offer": "CentOS",
+        "sku": "6.7",
+        "version": "latest"
+      },
+      "CentOS_7.2": {
+        "publisher": "OpenLogic",
+        "offer": "CentOS",
+        "sku": "7.2",
+        "version": "latest"
+      },
+      "CentOS_7.3": {
+        "publisher": "OpenLogic",
+        "offer": "CentOS",
+        "sku": "7.3",
+        "version": "latest"
+      },
+      "RHEL_7.2": {
+        "publisher": "RedHat",
+        "offer": "RHEL",
+        "sku": "7.2",
+        "version": "latest"
+      },
+      "SLES12": {
+        "publisher": "SUSE",
+        "offer": "SLES",
+        "sku": "12-SP1",
+        "version": "latest"
+      },
+      "W2012R2": {
+        "publisher": "MicrosoftWindowsServer",
+        "offer": "WindowsServer",
+        "sku": "2012-R2-Datacenter",
+        "version": "latest"
+      }
+    },
+    "deploymentApiVersion": "2015-01-01",
+    "sharedTemplateUrl": "[uri(deployment().properties.templateLink.uri, 'shared-resources.json')]",
+    "master-sharedTemplateUrl": "[uri(deployment().properties.templateLink.uri, 'master-shared-resources.json')]",
+    "master-OSTemplateUrl": "[uri(deployment().properties.templateLink.uri, concat('master-', variables('masterOSSettings').osType.os, '-resources.json'))]",
+    "master-NSGTemplateUrl": "[uri(deployment().properties.templateLink.uri, concat('nsg-master-', variables('masterOSSettings').osType.os, '.json'))]"
+  },
+  "resources": [
+    {
+      "name": "shared-resources",
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "[variables('deploymentApiVersion')]",
+      "properties": {
+        "mode": "Incremental",
+        "templateLink": {
+          "uri": "[variables('sharedTemplateUrl')]",
+          "contentVersion": "1.0.0.0"
+        },
+        "parameters": {
+          "networkSettings": {
+            "value": "[variables('networkSettings')]"
+          }
+        }
+      }
+    },
+    {
+      "name": "master-nsg",
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "[variables('deploymentApiVersion')]",
+      "properties": {
+        "mode": "Incremental",
+        "templateLink": {
+          "uri": "[variables('master-NSGTemplateUrl')]",
+          "contentVersion": "1.0.0.0"
+        },
+        "parameters": {
+          "nsgName": {
+            "value": "[variables('networkSettings').nsgName]"
+          }
+        }
+      }
+    },
+    {
+      "name": "master-shared-resources",
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "[variables('deploymentApiVersion')]",
+      "dependsOn": [
+        "shared-resources",
+        "master-nsg"
+      ],
+      "properties": {
+        "mode": "Incremental",
+        "templateLink": {
+          "uri": "[variables('master-sharedTemplateUrl')]",
+          "contentVersion": "1.0.0.0"
+        },
+        "parameters": {
+          "networkSettings": {
+            "value": "[variables('networkSettings')]"
+          },
+          "masterSettings": {
+            "value": "[variables('masterSettings')]"
+          }
+
+        }
+      }
+    },
+    {
+      "name": "master-OS-resources",
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "[variables('deploymentApiVersion')]",
+      "dependsOn": [
+        "master-shared-resources"
+      ],
+      "properties": {
+        "mode": "Incremental",
+        "templateLink": {
+          "uri": "[variables('master-OSTemplateUrl')]",
+          "contentVersion": "1.0.0.0"
+        },
+        "parameters": {
+          "networkSettings": {
+            "value": "[variables('networkSettings')]"
+          },
+          "masterSettings": {
+            "value": "[variables('masterSettings')]"
+          },
+          "masterOSSettings": {
+            "value": "[variables('masterOSSettings')]"
+          },
+          "adminPassword": {
+            "value": "[parameters('adminPassword')]"
+          }
+        }
+      }
+    }
+  ],
+  "outputs": {
+    "GangliaURI": {
+      "value": "[uri(concat('http://',reference('master-shared-resources').outputs.masterFQDN.value),'ganglia')]",
+      "type": "string"
+    },
+    "masterFQDN": {
+      "value": "[reference('master-shared-resources').outputs.masterFQDN.value]",
+      "type": "string"
+    }
+  }
+}
