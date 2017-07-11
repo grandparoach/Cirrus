@@ -142,9 +142,7 @@
     "deploymentApiVersion": "2015-01-01",
 
     "sharedTemplateUrl": "[uri(deployment().properties.templateLink.uri, 'shared-resources.json')]",
-    "master-sharedTemplateUrl": "[uri(deployment().properties.templateLink.uri, 'master-shared-resources.json')]",
-    "master-OSTemplateUrl": "[uri(deployment().properties.templateLink.uri, concat('master-', variables('masterOSSettings').osType.os, '-resources.json'))]",
-    "master-NSGTemplateUrl": "[uri(deployment().properties.templateLink.uri, concat('nsg-master-', variables('masterOSSettings').osType.os, '.json'))]"
+    "master-sharedTemplateUrl": "[uri(deployment().properties.templateLink.uri, 'master-shared-resources.json')]"
   },
   "resources": [
     {
