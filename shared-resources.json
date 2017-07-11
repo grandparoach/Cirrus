@@ -14,11 +14,19 @@
     "storageApiVersion": "2015-06-15"
   },
   "resources": [
-    {
+{
       "type": "Microsoft.Network/virtualNetworks",
       "name": "[parameters('networkSettings').virtualNetworkName]",
       "location": "[resourceGroup().location]",
       "apiVersion": "[variables('networkApiVersion')]",
+      "tags": { 
+         "Name": "Stratus"
+      },
+      "dependsOn": [
+		    "Microsoft.Network/networkSecurityGroups/compute-nsg",
+		    "Microsoft.Network/networkSecurityGroups/infra-nsg",
+		    "Microsoft.Network/networkSecurityGroups/storage-nsg"
+	    ], 
       "properties": {
         "addressSpace": {
           "addressPrefixes": [
@@ -28,26 +36,194 @@
         "subnets": [
           {
             "name": "computeSubnet",
+            "tags": { 
+               "Name": "Stratus"
+            },
             "properties": {
-              "addressPrefix": "[parameters('networkSettings').computeSubnetPrefix]"
+              "addressPrefix": "[parameters('networkSettings').computeSubnetPrefix]",
+              "networkSecurityGroup": {
+				        "id": "[resourceId('Microsoft.Network/networkSecurityGroups', 'compute-nsg')]"
+	          }
             }
           },
           {
             "name": "storageSubnet",
+            "tags": { 
+               "Name": "Stratus"
+            },
             "properties": {
-              "addressPrefix": "[parameters('networkSettings').storageSubnetPrefix]"
+              "addressPrefix": "[parameters('networkSettings').storageSubnetPrefix]",
+              "networkSecurityGroup": {
+				        "id": "[resourceId('Microsoft.Network/networkSecurityGroups', 'storage-nsg')]"
+              }
             }
           },
           {
             "name": "infraSubnet",
+            "tags": { 
+               "Name": "Stratus"
+            },
             "properties": {
-              "addressPrefix": "[parameters('networkSettings').infraSubnetPrefix]"
+              "addressPrefix": "[parameters('networkSettings').infraSubnetPrefix]",
+              "networkSecurityGroup": {
+				      "id": "[resourceId('Microsoft.Network/networkSecurityGroups', 'infra-nsg')]"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "type": "Microsoft.Network/networkSecurityGroups",
+      "name": "compute-nsg",
+      "apiVersion": "[variables('networkApiVersion')]",
+      "location": "[resourceGroup().location]",
+      "properties": {
+        "securityRules": [
+          {
+            "name": "ssh-rule",
+            "properties": {
+              "description": "Allow SSH",
+              "protocol": "Tcp",
+              "sourcePortRange": "*",
+              "destinationPortRange": "22",
+              "sourceAddressPrefix": "*",
+              "destinationAddressPrefix": "*",
+              "access": "Allow",
+              "priority": 100,
+              "direction": "Inbound"
             }
           },
           {
-            "name": "GatewaySubnet",
+            "name": "rdp-rule",
             "properties": {
-              "addressPrefix": "[parameters('networkSettings').gatewaySubnetPrefix]"
+              "description": "Allow RDP",
+              "protocol": "Tcp",
+              "sourcePortRange": "*",
+              "destinationPortRange": "3389",
+              "sourceAddressPrefix": "*",
+              "destinationAddressPrefix": "*",
+              "access": "Allow",
+              "priority": 100,
+              "direction": "Inbound"
+            }
+          },
+          {
+            "name": "web-rule",
+            "properties": {
+              "description": "Allow Web",
+              "protocol": "Tcp",
+              "sourcePortRange": "*",
+              "destinationPortRange": "80",
+              "sourceAddressPrefix": "*",
+              "destinationAddressPrefix": "*",
+              "access": "Allow",
+              "priority": 1000,
+              "direction": "Inbound"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "type": "Microsoft.Network/networkSecurityGroups",
+      "name": "infra-nsg",
+      "apiVersion": "[variables('networkApiVersion')]",
+      "location": "[resourceGroup().location]",
+      "properties": {
+        "securityRules": [
+          {
+            "name": "ssh-rule",
+            "properties": {
+              "description": "Allow SSH",
+              "protocol": "Tcp",
+              "sourcePortRange": "*",
+              "destinationPortRange": "22",
+              "sourceAddressPrefix": "*",
+              "destinationAddressPrefix": "*",
+              "access": "Allow",
+              "priority": 100,
+              "direction": "Inbound"
+            }
+          },
+          {
+            "name": "rdp-rule",
+            "properties": {
+              "description": "Allow RDP",
+              "protocol": "Tcp",
+              "sourcePortRange": "*",
+              "destinationPortRange": "3389",
+              "sourceAddressPrefix": "*",
+              "destinationAddressPrefix": "*",
+              "access": "Allow",
+              "priority": 100,
+              "direction": "Inbound"
+            }
+          },
+          {
+            "name": "web-rule",
+            "properties": {
+              "description": "Allow Web",
+              "protocol": "Tcp",
+              "sourcePortRange": "*",
+              "destinationPortRange": "80",
+              "sourceAddressPrefix": "*",
+              "destinationAddressPrefix": "*",
+              "access": "Allow",
+              "priority": 1000,
+              "direction": "Inbound"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "type": "Microsoft.Network/networkSecurityGroups",
+      "name": "storage-nsg",
+      "apiVersion": "[variables('networkApiVersion')]",
+      "location": "[resourceGroup().location]",
+      "properties": {
+        "securityRules": [
+          {
+            "name": "ssh-rule",
+            "properties": {
+              "description": "Allow SSH",
+              "protocol": "Tcp",
+              "sourcePortRange": "*",
+              "destinationPortRange": "22",
+              "sourceAddressPrefix": "*",
+              "destinationAddressPrefix": "*",
+              "access": "Allow",
+              "priority": 100,
+              "direction": "Inbound"
+            }
+          },
+          {
+            "name": "rdp-rule",
+            "properties": {
+              "description": "Allow RDP",
+              "protocol": "Tcp",
+              "sourcePortRange": "*",
+              "destinationPortRange": "3389",
+              "sourceAddressPrefix": "*",
+              "destinationAddressPrefix": "*",
+              "access": "Allow",
+              "priority": 100,
+              "direction": "Inbound"
+            }
+          },
+          {
+            "name": "web-rule",
+            "properties": {
+              "description": "Allow Web",
+              "protocol": "Tcp",
+              "sourcePortRange": "*",
+              "destinationPortRange": "80",
+              "sourceAddressPrefix": "*",
+              "destinationAddressPrefix": "*",
+              "access": "Allow",
+              "priority": 1000,
+              "direction": "Inbound"
             }
           }
         ]
@@ -55,3 +231,4 @@
     }
   ]
 }
+    
