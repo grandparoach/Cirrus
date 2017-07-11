@@ -1,91 +1,7 @@
 {
   "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
   "contentVersion": "1.0.0.0",
-  "parameters": {
-    "VMsku": {
-      "type": "string",
-      "allowedValues": [
-        "Standard_DS1_v2",
-        "Standard_DS2_v2",
-        "Standard_DS3_v2",
-        "Standard_DS4_v2",
-        "Standard_DS5_v2",
-        "Standard_DS11_v2",
-        "Standard_DS12_v2",
-        "Standard_DS13_v2",
-        "Standard_DS14_v2",
-        "Standard_DS15_v2"
-      ],
-      "metadata": {
-        "description": "sku to use for the master VM"
-      }
-    },
-    "masterImage": {
-      "type": "string",
-      "defaultValue": "CentOS_7.2",
-      "allowedValues": [
-        "CentOS_6.7",
-        "CentOS_7.2",
-        "RHEL_7.2",
-        "W2012R2"
-      ],
-      "metadata": {
-        "description": "The VM image of the master nodes"
-      }
-    },
-    "dataDiskSize": {
-      "type": "string",
-      "defaultValue": "none",
-      "allowedValues": [
-        "none",
-        "P10",
-        "P20",
-        "P30"
-      ],
-      "metadata": {
-        "description": "Premium storage disk size to attach"
-      }
-    },
-    "vmPrefix": {
-      "type": "string",
-      "metadata": {
-        "description": "Base string for naming resources (max length of 8)"
-      },
-      "maxLength": 8
-    },
-    "adminUserName": {
-      "type": "string",
-      "metadata": {
-        "description": "User name for the Virtual Machine."
-      }
-    },
-    "adminPassword": {
-      "type": "securestring",
-      "defaultValue": "",
-      "metadata": {
-        "description": "password for the Virtual Machine."
-      }
-    },
-    "sshKeyData": {
-      "type": "string",
-      "defaultValue": "",
-      "metadata": {
-        "description": "SSH rsa public key file as a string."
-      }
-    },
-    "storageAccount": {
-      "type": "string",
-      "metadata": {
-        "description": "Name of the Storage Account where the custom scripts reside"
-      }
-    },
-    "storageKey": {
-      "type": "string",
-      "metadata": {
-        "description": "Storage Account key."
-      }
-    }
-  },
+  "parameters": {},
   "variables": {
     "location": "[resourceGroup().location]",
     "namingInfix": "[toLower(substring(concat(parameters('vmPrefix'), uniqueString(resourceGroup().id)), 0, 9))]",
@@ -141,8 +57,7 @@
     },
     "deploymentApiVersion": "2015-01-01",
 
-    "sharedTemplateUrl": "[uri(deployment().properties.templateLink.uri, 'shared-resources.json')]",
-    "master-sharedTemplateUrl": "[uri(deployment().properties.templateLink.uri, 'master-shared-resources.json')]"
+    "sharedTemplateUrl": "https://raw.githubusercontent.com/grandparoach/Cirrus/master/shared-resources.json"
   },
   "resources": [
     {
