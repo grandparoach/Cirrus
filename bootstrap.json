@@ -4,9 +4,6 @@
   "parameters": {},
   "variables": {
     "location": "[resourceGroup().location]",
-    "namingInfix": "[toLower(substring(concat(parameters('vmPrefix'), uniqueString(resourceGroup().id)), 0, 9))]",
-    "longNamingInfix": "[toLower(parameters('vmPrefix'))]",
-    "newStorageAccountSuffix": "[concat(variables('longNamingInfix'), 'sa')]",
     "virtualNetworkName": "grid-vnet",
     "vnetID": "[resourceId('Microsoft.Network/virtualNetworks', variables('virtualNetworkName'))]",
     "networkSettings": {
@@ -19,41 +16,6 @@
       "infraSubnetRef": "[concat(variables('vnetID'),'/subnets/infraSubnet/')]",
       "computeSubnetRef": "[concat(variables('vnetID'),'/subnets/computeSubnet/')]",
       "storageSubnetRef": "[concat(variables('vnetID'),'/subnets/storageSubnet/')]"
-    },
-    "commonSettings": {
-      "DiagSAName": "[concat(uniqueString(concat(resourceGroup().id, variables('newStorageAccountSuffix'), 'masterboxsadiag')), 'diag')]",
-      "dataDiskSize": "[parameters('dataDiskSize')]",
-      "storageAccount": "[parameters('storageAccount')]",
-      "storageKey": "[parameters('storageKey')]",
-      "adminUserName": "[parameters('adminUserName')]",
-      "adminPassword": "[parameters('adminPassword')]"
-    },
-
-    "computeImages": {
-      "CentOS_6.7": {
-        "publisher": "OpenLogic",
-        "offer": "CentOS",
-        "sku": "6.7",
-        "version": "latest"
-      },
-      "CentOS_7.3": {
-        "publisher": "OpenLogic",
-        "offer": "CentOS",
-        "sku": "7.3",
-        "version": "latest"
-      },
-      "RHEL_7.2": {
-        "publisher": "RedHat",
-        "offer": "RHEL",
-        "sku": "7.2",
-        "version": "latest"
-      },
-      "W2012R2": {
-        "publisher": "MicrosoftWindowsServer",
-        "offer": "WindowsServer",
-        "sku": "2012-R2-Datacenter",
-        "version": "latest"
-      }
     },
     "deploymentApiVersion": "2015-01-01",
 
