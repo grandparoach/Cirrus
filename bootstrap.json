@@ -1,0 +1,168 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "VMsku": {
+      "type": "string",
+      "allowedValues": [
+        "Standard_DS1_v2",
+        "Standard_DS2_v2",
+        "Standard_DS3_v2",
+        "Standard_DS4_v2",
+        "Standard_DS5_v2",
+        "Standard_DS11_v2",
+        "Standard_DS12_v2",
+        "Standard_DS13_v2",
+        "Standard_DS14_v2",
+        "Standard_DS15_v2"
+      ],
+      "metadata": {
+        "description": "sku to use for the master VM"
+      }
+    },
+    "masterImage": {
+      "type": "string",
+      "defaultValue": "CentOS_7.2",
+      "allowedValues": [
+        "CentOS_6.7",
+        "CentOS_7.2",
+        "RHEL_7.2",
+        "W2012R2"
+      ],
+      "metadata": {
+        "description": "The VM image of the master nodes"
+      }
+    },
+    "dataDiskSize": {
+      "type": "string",
+      "defaultValue": "none",
+      "allowedValues": [
+        "none",
+        "P10",
+        "P20",
+        "P30"
+      ],
+      "metadata": {
+        "description": "Premium storage disk size to attach"
+      }
+    },
+    "vmPrefix": {
+      "type": "string",
+      "metadata": {
+        "description": "Base string for naming resources (max length of 8)"
+      },
+      "maxLength": 8
+    },
+    "adminUserName": {
+      "type": "string",
+      "metadata": {
+        "description": "User name for the Virtual Machine."
+      }
+    },
+    "adminPassword": {
+      "type": "securestring",
+      "defaultValue": "",
+      "metadata": {
+        "description": "password for the Virtual Machine."
+      }
+    },
+    "sshKeyData": {
+      "type": "string",
+      "defaultValue": "",
+      "metadata": {
+        "description": "SSH rsa public key file as a string."
+      }
+    },
+    "storageAccount": {
+      "type": "string",
+      "metadata": {
+        "description": "Name of the Storage Account where the custom scripts reside"
+      }
+    },
+    "storageKey": {
+      "type": "string",
+      "metadata": {
+        "description": "Storage Account key."
+      }
+    }
+  },
+  "variables": {
+    "location": "[resourceGroup().location]",
+    "namingInfix": "[toLower(substring(concat(parameters('vmPrefix'), uniqueString(resourceGroup().id)), 0, 9))]",
+    "longNamingInfix": "[toLower(parameters('vmPrefix'))]",
+    "newStorageAccountSuffix": "[concat(variables('longNamingInfix'), 'sa')]",
+    "virtualNetworkName": "grid-vnet",
+    "vnetID": "[resourceId('Microsoft.Network/virtualNetworks', variables('virtualNetworkName'))]",
+    "networkSettings": {
+      "virtualNetworkName": "[variables('virtualNetworkName')]",
+      "addressPrefix": "172.0.0.0/20",
+      "computeSubnetPrefix": "172.0.0.0/21",
+      "storageSubnetPrefix": "172.0.10.0/25",
+      "infraSubnetPrefix": "172.0.8.0/28",
+      "gatewaySubnetPrefix": "172.0.9.0/29",
+      "infraSubnetRef": "[concat(variables('vnetID'),'/subnets/infraSubnet/')]",
+      "computeSubnetRef": "[concat(variables('vnetID'),'/subnets/computeSubnet/')]",
+      "storageSubnetRef": "[concat(variables('vnetID'),'/subnets/storageSubnet/')]"
+    },
+    "commonSettings": {
+      "DiagSAName": "[concat(uniqueString(concat(resourceGroup().id, variables('newStorageAccountSuffix'), 'masterboxsadiag')), 'diag')]",
+      "dataDiskSize": "[parameters('dataDiskSize')]",
+      "storageAccount": "[parameters('storageAccount')]",
+      "storageKey": "[parameters('storageKey')]",
+      "adminUserName": "[parameters('adminUserName')]",
+      "adminPassword": "[parameters('adminPassword')]"
+    },
+
+    "computeImages": {
+      "CentOS_6.7": {
+        "publisher": "OpenLogic",
+        "offer": "CentOS",
+        "sku": "6.7",
+        "version": "latest"
+      },
+      "CentOS_7.3": {
+        "publisher": "OpenLogic",
+        "offer": "CentOS",
+        "sku": "7.3",
+        "version": "latest"
+      },
+      "RHEL_7.2": {
+        "publisher": "RedHat",
+        "offer": "RHEL",
+        "sku": "7.2",
+        "version": "latest"
+      },
+      "W2012R2": {
+        "publisher": "MicrosoftWindowsServer",
+        "offer": "WindowsServer",
+        "sku": "2012-R2-Datacenter",
+        "version": "latest"
+      }
+    },
+    "deploymentApiVersion": "2015-01-01",
+
+    "sharedTemplateUrl": "[uri(deployment().properties.templateLink.uri, 'shared-resources.json')]",
+    "master-sharedTemplateUrl": "[uri(deployment().properties.templateLink.uri, 'master-shared-resources.json')]",
+    "master-OSTemplateUrl": "[uri(deployment().properties.templateLink.uri, concat('master-', variables('masterOSSettings').osType.os, '-resources.json'))]",
+    "master-NSGTemplateUrl": "[uri(deployment().properties.templateLink.uri, concat('nsg-master-', variables('masterOSSettings').osType.os, '.json'))]"
+  },
+  "resources": [
+    {
+      "name": "shared-resources",
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "[variables('deploymentApiVersion')]",
+      "properties": {
+        "mode": "Incremental",
+        "templateLink": {
+          "uri": "[variables('sharedTemplateUrl')]",
+          "contentVersion": "1.0.0.0"
+        },
+        "parameters": {
+          "networkSettings": {
+            "value": "[variables('networkSettings')]"
+          }
+        }
+      }
+    }
+  ]
+}
