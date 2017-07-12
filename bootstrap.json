@@ -81,7 +81,9 @@
     "ad-serverTemplateUrl": "https://raw.githubusercontent.com/grandparoach/Cirrus/master/ad-server.json",
     "admirror-serverTemplateUrl": "https://raw.githubusercontent.com/grandparoach/Cirrus/master/admirror-server.json",
     "license-serverTemplateUrl": "https://raw.githubusercontent.com/grandparoach/Cirrus/master/license-server.json",
-    "gluster-serverTemplateUrl": "https://raw.githubusercontent.com/grandparoach/Cirrus/master/shared-storage-gluster.json"
+    "gluster-serverTemplateUrl": "https://raw.githubusercontent.com/grandparoach/Cirrus/master/shared-storage-gluster.json",
+    "samba-serverTemplateUrl": "https://raw.githubusercontent.com/grandparoach/Cirrus/master/shared-storage-samba.json",
+    "workstationTemplateUrl": "https://raw.githubusercontent.com/grandparoach/Cirrus/master/workstation.json"
   },
   "resources": [
     {
@@ -185,6 +187,52 @@
         "mode": "Incremental",
         "templateLink": {
           "uri": "[variables('gluster-serverTemplateUrl')]",
+          "contentVersion": "1.0.0.0"
+        },
+        "parameters": {
+          "networkSettings": {
+            "value": "[variables('networkSettings')]"
+          },
+          "commonSettings": {
+            "value": "[variables('commonSettings')]"
+          }
+        }
+      }
+    },
+    {
+      "name": "samba-servers",
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "[variables('deploymentApiVersion')]",
+      "dependsOn": [
+        "shared-resources"
+      ],
+      "properties": {
+        "mode": "Incremental",
+        "templateLink": {
+          "uri": "[variables('samba-serverTemplateUrl')]",
+          "contentVersion": "1.0.0.0"
+        },
+        "parameters": {
+          "networkSettings": {
+            "value": "[variables('networkSettings')]"
+          },
+          "commonSettings": {
+            "value": "[variables('commonSettings')]"
+          }
+        }
+      }
+    },
+    {
+      "name": "workstation",
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "[variables('deploymentApiVersion')]",
+      "dependsOn": [
+        "shared-resources"
+      ],
+      "properties": {
+        "mode": "Incremental",
+        "templateLink": {
+          "uri": "[variables('workstationTemplateUrl')]",
           "contentVersion": "1.0.0.0"
         },
         "parameters": {
