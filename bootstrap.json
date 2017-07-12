@@ -92,17 +92,21 @@
         "parameters": {
           "networkSettings": {
             "value": "[variables('networkSettings')]"
+          },
+          "commonSettings": {
+            "value": "[variables('commonSettings')]"
           }
         }
       }
     },
+
         {
       "name": "ad-server",
       "type": "Microsoft.Resources/deployments",
       "apiVersion": "[variables('deploymentApiVersion')]",
       "dependsOn": [
         "shared-resources"
-      ],    
+      ],
       "properties": {
         "mode": "Incremental",
         "templateLink": {
