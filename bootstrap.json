@@ -34,16 +34,18 @@
       }
     },
     "dataDiskSize": {
-      "type": "string",
-      "defaultValue": "none",
-      "allowedValues": [
-        "none",
-        "P10",
-        "P20",
-        "P30"
-      ],
+      "type": "int",
+      "defaultValue": 256,
       "metadata": {
-        "description": "Premium storage disk size to attach"
+        "description": "The size in GB of each of the data disks that are attached to the VM."
+      }
+    },
+    "nbDataDisks": {
+      "type": "int",
+      "defaultValue": 1,
+      "maxValue": 16,
+      "metadata": {
+        "description": "The number of disks to attach to the shared storage servers."
       }
     }
   },
@@ -68,6 +70,7 @@
     "commonSettings": {
       "DiagSAName": "[concat(uniqueString(concat(resourceGroup().id, variables('newStorageAccountSuffix'), 'masterboxsadiag')), 'diag')]",
       "dataDiskSize": "[parameters('dataDiskSize')]",
+      "nbDataDisks": "[parameters('nbDataDisks')]",
       "storageAccount": "[parameters('storageAccount')]",
       "storageKey": "[parameters('storageKey')]",
       "adminUsername": "[parameters('adminUserName')]",
