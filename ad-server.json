@@ -116,26 +116,29 @@
                 }
             }
         },
-      {
+
+{
       "type": "Microsoft.Compute/virtualMachines/extensions",
       "name": "ad-server/ext",
-      "apiVersion": "2015-06-15",
+      "apiVersion": "2015-05-01-preview",
       "location": "[resourceGroup().location]",
       "dependsOn": [
         "Microsoft.Compute/virtualMachines/ad-server"
       ],
       "properties": {
-        "publisher": "Microsoft.Azure.Extensions",
-        "type": "CustomScript",
-        "typeHandlerVersion": "2.0",
-        "autoUpgradeMinorVersion": true,
+        "publisher": "Microsoft.Compute",
+        "type": "CustomScriptExtension",
+        "typeHandlerVersion": "1.3",
+        "autoUpgradeMinorVersion": "true",
         "settings": {
-          "fileUris": "https://srprivate.blob.core.windows.net/scripts/ad-server-sysprep.ps1",
+          "fileUris": [
+            "https://srprivate.blob.core.windows.net/scripts/ad-server-sysprep.ps1"
+          ],
           "commandToExecute": "[concat('powershell -ExecutionPolicy Unrestricted -File ad-server-sysprep.ps1')]"
         },
         "protectedSettings": {
-           "storageAccountName": "[parameters('commonSettings').storageAccount]",
-           "storageAccountKey": "[parameters('commonSettings').storageKey]"
+          "storageAccountName": "[parameters('commonSettings').storageAccount]",
+          "storageAccountKey": "[parameters('commonSettings').storageKey]"
         }
       }
     }
