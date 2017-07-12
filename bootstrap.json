@@ -17,7 +17,6 @@
     },
     "adminPassword": {
       "type": "securestring",
-      "defaultValue": "",
       "metadata": {
         "description": "password for the Virtual Machine."
       }
@@ -76,7 +75,8 @@
     },
     "deploymentApiVersion": "2015-01-01",
     "sharedTemplateUrl": "https://raw.githubusercontent.com/grandparoach/Cirrus/master/shared-resources.json", 
-    "ad-serverTemplateUrl": "https://raw.githubusercontent.com/grandparoach/Cirrus/master/ad-server.json"
+    "ad-serverTemplateUrl": "https://raw.githubusercontent.com/grandparoach/Cirrus/master/ad-server.json",
+    "admirror-serverTemplateUrl": "https://raw.githubusercontent.com/grandparoach/Cirrus/master/admirror-server.json"
   },
   "resources": [
     {
@@ -111,6 +111,30 @@
         "mode": "Incremental",
         "templateLink": {
           "uri": "[variables('ad-serverTemplateUrl')]",
+          "contentVersion": "1.0.0.0"
+        },
+        "parameters": {
+          "networkSettings": {
+            "value": "[variables('networkSettings')]"
+          },
+          "commonSettings": {
+            "value": "[variables('commonSettings')]"
+          }
+        }
+      }
+    },
+     {
+      "name": "admirror-server",
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "[variables('deploymentApiVersion')]",
+      "dependsOn": [
+        "shared-resources",
+        "ad-server"
+      ],
+      "properties": {
+        "mode": "Incremental",
+        "templateLink": {
+          "uri": "[variables('admirror-serverTemplateUrl')]",
           "contentVersion": "1.0.0.0"
         },
         "parameters": {
