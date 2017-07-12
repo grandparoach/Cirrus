@@ -1,1 +1,243 @@
-This is the json for the samba servers
+{
+    "$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "networkSettings": {
+          "type": "object",
+          "metadata": {
+            "Description": "Network settings object"
+          }
+        },
+        "commonSettings": {
+           "type": "object",
+           "metadata": {
+             "Description": "Common settings object"
+          }
+        }
+    },
+    "variables": {
+        "dataDiskArray": [
+      {
+        "diskSizeGB": "[parameters('commonSettings').dataDiskSize]",
+        "lun": "0",
+        "createOption": "Empty"
+      },
+      {
+        "diskSizeGB": "[parameters('commonSettings').dataDiskSize]",
+        "lun": "1",
+        "createOption": "Empty"
+      },
+      {
+        "diskSizeGB": "[parameters('commonSettings').dataDiskSize]",
+        "lun": "2",
+        "createOption": "Empty"
+      },
+      {
+        "diskSizeGB": "[parameters('commonSettings').dataDiskSize]",
+        "lun": "3",
+        "createOption": "Empty"
+      },
+      {
+        "diskSizeGB": "[parameters('commonSettings').dataDiskSize]",
+        "lun": "4",
+        "createOption": "Empty"
+      },
+      {
+        "diskSizeGB": "[parameters('commonSettings').dataDiskSize]",
+        "lun": "5",
+        "createOption": "Empty"
+      },
+      {
+        "diskSizeGB": "[parameters('commonSettings').dataDiskSize]",
+        "lun": "6",
+        "createOption": "Empty"
+      },
+      {
+        "diskSizeGB": "[parameters('commonSettings').dataDiskSize]",
+        "lun": "7",
+        "createOption": "Empty"
+      },
+      {
+        "diskSizeGB": "[parameters('commonSettings').dataDiskSize]",
+        "lun": "8",
+        "createOption": "Empty"
+      },
+      {
+        "diskSizeGB": "[parameters('commonSettings').dataDiskSize]",
+        "lun": "9",
+        "createOption": "Empty"
+      },
+      {
+        "diskSizeGB": "[parameters('commonSettings').dataDiskSize]",
+        "lun": "10",
+        "createOption": "Empty"
+      },
+      {
+        "diskSizeGB": "[parameters('commonSettings').dataDiskSize]",
+        "lun": "11",
+        "createOption": "Empty"
+      },
+      {
+        "diskSizeGB": "[parameters('commonSettings').dataDiskSize]",
+        "lun": "12",
+        "createOption": "Empty"
+      },
+      {
+        "diskSizeGB": "[parameters('commonSettings').dataDiskSize]",
+        "lun": "13",
+        "createOption": "Empty"
+      },
+      {
+        "diskSizeGB": "[parameters('commonSettings').dataDiskSize]",
+        "lun": "14",
+        "createOption": "Empty"
+      },
+      {
+        "diskSizeGB": "[parameters('commonSettings').dataDiskSize]",
+        "lun": "15",
+        "createOption": "Empty"
+      }
+    ]
+    },
+    "resources": [
+        {
+            "name": "samba-AVSet",
+            "type": "Microsoft.Compute/availabilitySets",
+            "apiVersion": "2016-04-30-preview",
+            "location": "[resourceGroup().location]",
+            "properties": {
+                "platformFaultDomainCount": 2,
+                "platformUpdateDomainCount": 3,
+                "managed": true
+            }
+        }, 
+        {
+            "name": "[concat('samba-PubIP-', copyindex(1))]",
+            "type": "Microsoft.Network/publicIPAddresses",
+            "apiVersion": "2016-09-01",
+            "location": "[resourceGroup().location]",
+            "copy": {
+               "name": "sambapubIPCopy",
+               "count": 2
+            },
+            "properties": {
+                "publicIPAllocationMethod": "Dynamic"
+            }
+        },
+        {
+            "name": "[concat('samba-nic-', copyindex(1))]",
+            "type": "Microsoft.Network/networkInterfaces",
+            "apiVersion": "2016-09-01",
+            "location": "[resourceGroup().location]",
+            "copy": {
+               "name": "sambaniccopy",
+               "count": 2
+            },
+            "dependsOn": [
+                "[concat('Microsoft.Network/publicIpAddresses/samba-PubIP-', copyindex(1))]"
+            ],
+            "properties": {
+                "ipConfigurations": [
+                    {
+                        "name": "ipconfig1",
+                        "properties": {
+                            "subnet": {
+                                "id": "[parameters('networkSettings').storageSubnetRef]"
+                            },
+                            "privateIPAllocationMethod": "Dynamic",
+                            "publicIpAddress": {
+                                "id": "[resourceId('Microsoft.Network/publicIpAddresses', concat('samba-PubIP-', copyindex(1)))]"
+                            }
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "name": "[concat('samba-server-', copyindex(1))]",
+            "type": "Microsoft.Compute/virtualMachines",
+            "apiVersion": "2016-04-30-preview",
+            "location": "[resourceGroup().location]",
+            "copy": {
+               "name": "sambacopy",
+               "count": 2
+            },
+            "dependsOn": [
+                "[concat('Microsoft.Network/networkInterfaces/samba-nic-', copyindex(1))]",
+                "Microsoft.Compute/availabilitySets/samba-AVSet"
+            ],
+            "properties": {
+                "osProfile": {
+                    "computerName": "[concat('samba-server-', copyindex(1))]",
+                    "adminUsername": "[parameters('commonSettings').adminUsername]",
+                    "adminPassword": "[parameters('commonSettings').adminPassword]",
+                    "linuxConfiguration": { }
+                },
+                "hardwareProfile": {
+                    "vmSize": "Standard_DS13_v2"
+                },
+                "storageProfile": {
+                    "imageReference": {
+                        "publisher": "OpenLogic",
+                        "offer": "CentOS",
+                        "sku": "7.3",
+                        "version": "latest"
+                    },
+                    "osDisk": {
+                        "createOption": "fromImage",
+                        "managedDisk": {
+                            "storageAccountType": "Standard_LRS"
+                        }
+                    },
+                    "dataDisks": "[take(variables('dataDiskArray'),parameters('commonSettings').nbDataDisks)]"
+                },
+                "networkProfile": {
+                    "networkInterfaces": [
+                        {
+                            "id": "[resourceId('Microsoft.Network/networkInterfaces', concat('samba-nic-', copyindex(1)))]"
+                        }
+                    ]
+                },
+                "diagnosticsProfile": {
+                    "bootDiagnostics": {
+                        "enabled": true,
+                        "storageUri": "[concat('http://',parameters('commonSettings').DiagSAName,'.blob.core.windows.net')]"
+                    }
+                },
+                "availabilitySet": {
+                    "id": "[resourceId('Microsoft.Compute/availabilitySets', 'samba-AVSet')]"
+                }
+            }
+        },
+
+{
+      "type": "Microsoft.Compute/virtualMachines/extensions",
+      "name": "[concat('samba-server-', copyindex(1), '/ext')]",
+      "apiVersion": "2015-06-15",
+      "location": "[resourceGroup().location]",
+      "dependsOn": [
+        "[concat('Microsoft.Compute/virtualMachines/samba-server-', copyindex(1))]"
+      ],
+      "copy": {
+         "name": "sambaextcopy",
+         "count": 2
+      },
+      "properties": {
+        "publisher": "Microsoft.Azure.Extensions",
+        "type": "CustomScript",
+        "typeHandlerVersion": "2.0",
+        "autoUpgradeMinorVersion": "true",
+        "settings": {
+          "fileUris": [
+            "https://srprivate.blob.core.windows.net/scripts/samba-server-sysprep.sh"
+          ],
+          "commandToExecute": "bash samba-server-sysprep.sh"
+        },
+        "protectedSettings": {
+          "storageAccountName": "[parameters('commonSettings').storageAccount]",
+          "storageAccountKey": "[parameters('commonSettings').storageKey]"
+        }
+      }
+    }
+  ]
+}
