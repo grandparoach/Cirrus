@@ -1,1 +1,160 @@
-This is the json for the gluster servers
+{
+    "$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "networkSettings": {
+          "type": "object",
+          "metadata": {
+            "Description": "Network settings object"
+          }
+        },
+        "commonSettings": {
+           "type": "object",
+           "metadata": {
+             "Description": "Common settings object"
+          }
+        }
+    },
+    "variables": {},
+    "resources": [
+        {
+            "name": "gluster-AVSet",
+            "type": "Microsoft.Compute/availabilitySets",
+            "apiVersion": "2016-04-30-preview",
+            "location": "[resourceGroup().location]",
+            "properties": {
+                "platformFaultDomainCount": 2,
+                "platformUpdateDomainCount": 3,
+                "managed": true
+            }
+        }, 
+        {
+            "name": "[concat('gluster-PubIP-', copyindex(1))]",
+            "type": "Microsoft.Network/publicIPAddresses",
+            "apiVersion": "2016-09-01",
+            "location": "[resourceGroup().location]",
+            "copy": {
+               "name": "glusterpubIPCopy",
+               "count": 4
+            },
+            "properties": {
+                "publicIPAllocationMethod": "Dynamic"
+            }
+        },
+        {
+            "name": "[concat('gluster-nic-', copyindex(1))]",
+            "type": "Microsoft.Network/networkInterfaces",
+            "apiVersion": "2016-09-01",
+            "location": "[resourceGroup().location]",
+            "copy": {
+               "name": "glusterniccopy",
+               "count": 4
+            },
+            "dependsOn": [
+                "[concat('Microsoft.Network/publicIpAddresses/gluster-PubIP-', copyindex(1))]"
+            ],
+            "properties": {
+                "ipConfigurations": [
+                    {
+                        "name": "ipconfig1",
+                        "properties": {
+                            "subnet": {
+                                "id": "[parameters('networkSettings').storageSubnetRef]"
+                            },
+                            "privateIPAllocationMethod": "Dynamic",
+                            "publicIpAddress": {
+                                "id": "[resourceId('Microsoft.Network/publicIpAddresses', concat('gluster-PubIP-', copyindex(1)))]"
+                            }
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "name": "[concat('gluster-server-', copyindex(1))]",
+            "type": "Microsoft.Compute/virtualMachines",
+            "apiVersion": "2016-04-30-preview",
+            "location": "[resourceGroup().location]",
+            "copy": {
+               "name": "glustercopy",
+               "count": 4
+            },
+            "dependsOn": [
+                "[concat('Microsoft.Network/networkInterfaces/gluster-nic-', copyindex(1))]",
+                "Microsoft.Compute/availabilitySets/gluster-AVSet"
+            ],
+            "properties": {
+                "osProfile": {
+                    "computerName": "[concat('gluster-server-', copyindex(1))]",
+                    "adminUsername": "[parameters('commonSettings').adminUsername]",
+                    "adminPassword": "[parameters('commonSettings').adminPassword]",
+                    "linuxConfiguration": { }
+                },
+                "hardwareProfile": {
+                    "vmSize": "Standard_F4s"
+                },
+                "storageProfile": {
+                    "imageReference": {
+                        "publisher": "OpenLogic",
+                        "offer": "CentOS",
+                        "sku": "7.3",
+                        "version": "latest"
+                    },
+                    "osDisk": {
+                        "createOption": "fromImage",
+                        "managedDisk": {
+                            "storageAccountType": "Standard_LRS"
+                        }
+                    },
+                    "dataDisks": []
+                },
+                "networkProfile": {
+                    "networkInterfaces": [
+                        {
+                            "id": "[resourceId('Microsoft.Network/networkInterfaces', concat('gluster-nic-', copyindex(1)))]"
+                        }
+                    ]
+                },
+                "diagnosticsProfile": {
+                    "bootDiagnostics": {
+                        "enabled": true,
+                        "storageUri": "[concat('http://',parameters('commonSettings').DiagSAName,'.blob.core.windows.net')]"
+                    }
+                },
+                "availabilitySet": {
+                    "id": "[resourceId('Microsoft.Compute/availabilitySets', 'gluster-AVSet')]"
+                }
+            }
+        },
+
+{
+      "type": "Microsoft.Compute/virtualMachines/extensions",
+      "name": "[concat('gluster-server-', copyindex(1), '/ext')]",
+      "apiVersion": "2015-06-15",
+      "location": "[resourceGroup().location]",
+      "dependsOn": [
+        "[concat('Microsoft.Compute/virtualMachines/gluster-server-', copyindex(1))]"
+      ],
+      "copy": {
+         "name": "glusterextcopy",
+         "count": 4
+      },
+      "properties": {
+        "publisher": "Microsoft.Azure.Extensions",
+        "type": "CustomScript",
+        "typeHandlerVersion": "2.0",
+        "autoUpgradeMinorVersion": "true",
+        "settings": {
+          "fileUris": [
+            "https://srprivate.blob.core.windows.net/scripts/gluster-sysprep.sh"
+          ],
+          "commandToExecute": "bash gluster-sysprep.sh"
+        },
+        "protectedSettings": {
+          "storageAccountName": "[parameters('commonSettings').storageAccount]",
+          "storageAccountKey": "[parameters('commonSettings').storageKey]"
+        }
+      }
+    }
+  ]
+}
