@@ -76,7 +76,8 @@
     "deploymentApiVersion": "2015-01-01",
     "sharedTemplateUrl": "https://raw.githubusercontent.com/grandparoach/Cirrus/master/shared-resources.json", 
     "ad-serverTemplateUrl": "https://raw.githubusercontent.com/grandparoach/Cirrus/master/ad-server.json",
-    "admirror-serverTemplateUrl": "https://raw.githubusercontent.com/grandparoach/Cirrus/master/admirror-server.json"
+    "admirror-serverTemplateUrl": "https://raw.githubusercontent.com/grandparoach/Cirrus/master/admirror-server.json",
+    "license-serverTemplateUrl": "https://raw.githubusercontent.com/grandparoach/Cirrus/master/license-server.json"
   },
   "resources": [
     {
@@ -128,13 +129,35 @@
       "type": "Microsoft.Resources/deployments",
       "apiVersion": "[variables('deploymentApiVersion')]",
       "dependsOn": [
-        "shared-resources",
-        "ad-server"
+        "shared-resources"
       ],
       "properties": {
         "mode": "Incremental",
         "templateLink": {
           "uri": "[variables('admirror-serverTemplateUrl')]",
+          "contentVersion": "1.0.0.0"
+        },
+        "parameters": {
+          "networkSettings": {
+            "value": "[variables('networkSettings')]"
+          },
+          "commonSettings": {
+            "value": "[variables('commonSettings')]"
+          }
+        }
+      }
+    },
+    {
+      "name": "license-servers",
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "[variables('deploymentApiVersion')]",
+      "dependsOn": [
+        "shared-resources"
+      ],
+      "properties": {
+        "mode": "Incremental",
+        "templateLink": {
+          "uri": "[variables('license-serverTemplateUrl')]",
           "contentVersion": "1.0.0.0"
         },
         "parameters": {
