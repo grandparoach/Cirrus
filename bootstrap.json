@@ -1,9 +1,58 @@
 {
   "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
   "contentVersion": "1.0.0.0",
-  "parameters": {},
+  "parameters": {
+      "vmPrefix": {
+      "type": "string",
+      "metadata": {
+        "description": "Base string for naming resources (max length of 8)"
+      },
+      "maxLength": 8
+    },
+    "adminUserName": {
+      "type": "string",
+      "metadata": {
+        "description": "User name for the Virtual Machine."
+      }
+    },
+    "adminPassword": {
+      "type": "securestring",
+      "defaultValue": "",
+      "metadata": {
+        "description": "password for the Virtual Machine."
+      }
+    },
+    "storageAccount": {
+      "type": "string",
+      "metadata": {
+        "description": "Name of the Storage Account where the custom scripts reside"
+      }
+    },
+    "storageKey": {
+      "type": "string",
+      "metadata": {
+        "description": "Storage Account key."
+      }
+    },
+    "dataDiskSize": {
+      "type": "string",
+      "defaultValue": "none",
+      "allowedValues": [
+        "none",
+        "P10",
+        "P20",
+        "P30"
+      ],
+      "metadata": {
+        "description": "Premium storage disk size to attach"
+      }
+    }
+  },
   "variables": {
     "location": "[resourceGroup().location]",
+    "namingInfix": "[toLower(substring(concat(parameters('vmPrefix'), uniqueString(resourceGroup().id)), 0, 9))]",
+    "longNamingInfix": "[toLower(parameters('vmPrefix'))]",
+    "newStorageAccountSuffix": "[concat(variables('longNamingInfix'), 'sa')]",
     "virtualNetworkName": "grid-vnet",
     "vnetID": "[resourceId('Microsoft.Network/virtualNetworks', variables('virtualNetworkName'))]",
     "networkSettings": {
@@ -17,9 +66,17 @@
       "computeSubnetRef": "[concat(variables('vnetID'),'/subnets/computeSubnet/')]",
       "storageSubnetRef": "[concat(variables('vnetID'),'/subnets/storageSubnet/')]"
     },
+    "commonSettings": {
+      "DiagSAName": "[concat(uniqueString(concat(resourceGroup().id, variables('newStorageAccountSuffix'), 'masterboxsadiag')), 'diag')]",
+      "dataDiskSize": "[parameters('dataDiskSize')]",
+      "storageAccount": "[parameters('storageAccount')]",
+      "storageKey": "[parameters('storageKey')]",
+      "adminUsername": "[parameters('adminUserName')]",
+      "adminPassword": "[parameters('adminPassword')]"
+    },
     "deploymentApiVersion": "2015-01-01",
-
-    "sharedTemplateUrl": "https://raw.githubusercontent.com/grandparoach/Cirrus/master/shared-resources.json"
+    "sharedTemplateUrl": "https://raw.githubusercontent.com/grandparoach/Cirrus/master/shared-resources.json", 
+    "ad-serverTemplateUrl": "https://raw.githubusercontent.com/grandparoach/Cirrus/master/ad-server.json"
   },
   "resources": [
     {
@@ -35,6 +92,26 @@
         "parameters": {
           "networkSettings": {
             "value": "[variables('networkSettings')]"
+          }
+        }
+      }
+    },
+        {
+      "name": "ad-server",
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "[variables('deploymentApiVersion')]",
+      "properties": {
+        "mode": "Incremental",
+        "templateLink": {
+          "uri": "[variables('ad-serverTemplateUrl')]",
+          "contentVersion": "1.0.0.0"
+        },
+        "parameters": {
+          "networkSettings": {
+            "value": "[variables('networkSettings')]"
+          },
+          "commonSettings": {
+            "value": "[variables('commonSettings')]"
           }
         }
       }
