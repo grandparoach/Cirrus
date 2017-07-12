@@ -77,7 +77,8 @@
     "sharedTemplateUrl": "https://raw.githubusercontent.com/grandparoach/Cirrus/master/shared-resources.json", 
     "ad-serverTemplateUrl": "https://raw.githubusercontent.com/grandparoach/Cirrus/master/ad-server.json",
     "admirror-serverTemplateUrl": "https://raw.githubusercontent.com/grandparoach/Cirrus/master/admirror-server.json",
-    "license-serverTemplateUrl": "https://raw.githubusercontent.com/grandparoach/Cirrus/master/license-server.json"
+    "license-serverTemplateUrl": "https://raw.githubusercontent.com/grandparoach/Cirrus/master/license-server.json",
+    "gluster-serverTemplateUrl": "https://raw.githubusercontent.com/grandparoach/Cirrus/master/shared-storage-gluster.json"
   },
   "resources": [
     {
@@ -158,6 +159,29 @@
         "mode": "Incremental",
         "templateLink": {
           "uri": "[variables('license-serverTemplateUrl')]",
+          "contentVersion": "1.0.0.0"
+        },
+        "parameters": {
+          "networkSettings": {
+            "value": "[variables('networkSettings')]"
+          },
+          "commonSettings": {
+            "value": "[variables('commonSettings')]"
+          }
+        }
+      }
+    },
+    {
+      "name": "gluster-servers",
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "[variables('deploymentApiVersion')]",
+      "dependsOn": [
+        "shared-resources"
+      ],
+      "properties": {
+        "mode": "Incremental",
+        "templateLink": {
+          "uri": "[variables('gluster-serverTemplateUrl')]",
           "contentVersion": "1.0.0.0"
         },
         "parameters": {
