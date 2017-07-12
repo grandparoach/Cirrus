@@ -1,1 +1,148 @@
-This is the json for the AD-Server
+{
+    "$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "networkSettings": {
+          "type": "object",
+          "metadata": {
+            "Description": "Network settings object"
+          }
+        },
+        "commonSettings": {
+           "type": "object",
+           "metadata": {
+             "Description": "Common settings object"
+          }
+        }
+    },
+    "variables": {},
+    "resources": [
+        {
+            "name": "AD-AVSet",
+            "type": "Microsoft.Compute/availabilitySets",
+            "apiVersion": "2016-04-30-preview",
+            "location": "[resourceGroup().location]",
+            "properties": {
+                "platformFaultDomainCount": 2,
+                "platformUpdateDomainCount": 3,
+                "managed": true
+            }
+        }, 
+        {
+            "name": "ad-server-publicIP",
+            "type": "Microsoft.Network/publicIPAddresses",
+            "apiVersion": "2016-09-01",
+            "location": "[resourceGroup().location]",
+            "properties": {
+                "publicIPAllocationMethod": "Dynamic"
+            }
+        },
+        {
+            "name": "ad-server-nic",
+            "type": "Microsoft.Network/networkInterfaces",
+            "apiVersion": "2016-09-01",
+            "location": "[resourceGroup().location]",
+            "dependsOn": [
+                "Microsoft.Network/publicIpAddresses/ad-server-publicIP"
+            ],
+            "properties": {
+                "ipConfigurations": [
+                    {
+                        "name": "ipconfig1",
+                        "properties": {
+                            "subnet": {
+                                "id": "[parameters('networkSettings').infraSubnetRef]"
+                            },
+                            "privateIPAllocationMethod": "Dynamic",
+                            "publicIpAddress": {
+                                "id": "[resourceId('Microsoft.Network/publicIpAddresses', 'ad-server-publicIP')]"
+                            }
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "name": "ad-server",
+            "type": "Microsoft.Compute/virtualMachines",
+            "apiVersion": "2016-04-30-preview",
+            "location": "[resourceGroup().location]",
+            "dependsOn": [
+                "Microsoft.Network/networkInterfaces/ad-server-nic",
+                "Microsoft.Compute/availabilitySets/AD-AVSet"
+            ],
+            "properties": {
+                "osProfile": {
+                    "computerName": "ad-server",
+                    "adminUsername": "[parameters('commonSettings').adminUsername]",
+                    "adminPassword": "[parameters('commonSettings').adminPassword]",
+                    "windowsConfiguration": {
+                        "provisionVmAgent": "true"
+                    }
+                },
+                "hardwareProfile": {
+                    "vmSize": "Standard_D2_v2"
+                },
+                "storageProfile": {
+                    "imageReference": {
+                        "publisher": "MicrosoftWindowsServer",
+                        "offer": "WindowsServer",
+                        "sku": "2016-Datacenter",
+                        "version": "latest"
+                    },
+                    "osDisk": {
+                        "createOption": "fromImage",
+                        "managedDisk": {
+                            "storageAccountType": "Standard_LRS"
+                        }
+                    },
+                    "dataDisks": []
+                },
+                "networkProfile": {
+                    "networkInterfaces": [
+                        {
+                            "id": "[resourceId('Microsoft.Network/networkInterfaces', 'ad-server-nic')]"
+                        }
+                    ]
+                },
+                "diagnosticsProfile": {
+                    "bootDiagnostics": {
+                        "enabled": true,
+                        "storageUri": "[concat('http://',parameters('commonSettings').DiagSAName,'.blob.core.windows.net')]"
+                    }
+                },
+                "availabilitySet": {
+                    "id": "[resourceId('Microsoft.Compute/availabilitySets', 'AD-AVSet')]"
+                },
+                "resources": [
+                {
+                  "name": "AD-ServerExtension",
+                  "type": "extensions",
+                  "location": "[resourceGroup().location]",
+                  "apiVersion": "2015-06-15",
+                  "dependsOn": [
+                    "Microsoft.Compute/virtualMachines/ad-server"
+                  ],
+                  "tags": {
+                    "displayName": "AD-ServerExtension"
+                  },
+                  "properties": {
+                    "publisher": "Microsoft.Compute",
+                    "type": "CustomScriptExtension",
+                    "typeHandlerVersion": "1.8",
+                    "autoUpgradeMinorVersion": true,
+                    "settings": {
+                      "fileUris": "https://srprivate.blob.core.windows.net/scripts/ad-server-sysprep.ps1",
+                      "commandToExecute": "[concat('powershell -ExecutionPolicy Unrestricted -File ad-server-sysprep.ps1')]"
+                    },
+                    "protectedSettings": {
+                      "storageAccountName": "[parameters('commonSettings').storageAccount]",
+                      "storageAccountKey": "[parameters('commonSettings').storageKey]"
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        ]
+}
